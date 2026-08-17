@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>刘原宁 · Agent 智能体开发工程师 · 3D 简历</title>
+<meta name="description" content="刘原宁的 3D 魔方简历：Agent 智能体开发工程师，LangChain/LangGraph、RAG、DeepSeek 大模型应用。拖拽旋转魔方，探索我的项目与技能。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='50,4 90,27 90,73 50,96 10,73 10,27' fill='%235F9482'/%3E%3Cpolygon points='50,18 78,34 78,66 50,82 22,66 22,34' fill='%23F8F2E9'/%3E%3C/svg%3E">
+<style>
+  /* ============ makemepulse 暖色低饱和配色 ============ */
+  :root{
+    --cream:   #F8F2E9;
+    --cream-2: #F1E8DA;
+    --ink:     #463B30;
+    --sub:     #9A8C7D;
+    --teal:    #5F9482;
+    --teal-soft:#A9C8BB;
+    --peach:   #E08A54;
+    --peach-soft:#F3CDB4;
+    --blush:   #EFC0A6;
+    --line:    rgba(95,148,130,.35);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+  /* 柔和渐变背景（奶油白 → 蜜桃 → 青绿） */
+  #bg-grad{
+    position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(120% 90% at 16% 10%, rgba(243,205,180,.55), transparent 62%),
+      radial-gradient(110% 95% at 86% 90%, rgba(169,200,187,.55), transparent 64%),
+      radial-gradient(90% 70% at 50% 42%, rgba(255,252,246,.85), transparent 72%),
+      linear-gradient(155deg, #FBF6EE 0%, #F4ECDF 55%, #F0E7D8 100%);
+    animation:bgDrift 46s ease-in-out infinite alternate;
+  }
+  @keyframes bgDrift{
+    0%  { filter:hue-rotate(0deg) saturate(1); }
+    50% { filter:hue-rotate(-6deg) saturate(1.06); }
+    100%{ filter:hue-rotate(5deg) saturate(.98); }
+  }
+  /* 胶片颗粒 */
+  #grain{
+    position:fixed; inset:0; z-index:30; pointer-events:none;
+    opacity:.04; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grainShift 1.2s steps(6) infinite;
+  }
+  @keyframes grainShift{
+    0%{ background-position:0 0; } 16%{ background-position:-60px 40px; }
+    33%{ background-position:40px -90px; } 50%{ background-position:-110px -20px; }
+    66%{ background-position:80px 110px; } 83%{ background-position:-30px -130px; }
+    100%{ background-position:0 0; }
+  }
+  /* 光标暖光 */
+  #glow{
+    position:fixed; left:0; top:0; width:280px; height:280px; z-index:1;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(224,138,84,.09), transparent 65%);
+    pointer-events:none; opacity:0; transition:opacity .6s ease;
+    will-change:left,top;
+  }
+  body.has-pointer #glow{ opacity:1; }
+  /* WebGL 画布 */
+  #gl{
+    position:fixed; inset:0; z-index:2;
+    width:100%; height:100%;
+    touch-action:none; cursor:grab;
+    user-select:none; -webkit-user-select:none;
+    -webkit-touch-callout:none;
+  }
+  #gl.grabbing{ cursor:grabbing; }
+  #gl.hovering{ cursor:pointer; }
+
+  /* 顶部提示 */
+  #hint{
+    position:fixed; top:5.5%; left:0; right:0; z-index:10;
+    text-align:center; font-size:12.5px; letter-spacing:3px; color:var(--sub);
+    pointer-events:none; transition:opacity .5s;
+  }
+  #hint .hl{ color:var(--peach); font-weight:700; }
+
+  /* HUD */
+  #hud{
+    position:fixed; left:0; right:0; bottom:16px; z-index:20;
+    display:flex; justify-content:center; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:0 12px;
+  }
+  .hud-chip{
+    border:1px solid var(--line); background:rgba(248,242,233,.72);
+    color:#5d5246; font-size:12.5px; letter-spacing:1px;
+    padding:7px 15px; border-radius:999px; cursor:pointer; text-decoration:none;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    transition:all .3s ease;
+    display:flex; align-items:center; gap:7px;
+  }
+  .hud-chip .dot{ width:5px; height:5px; border-radius:50%; background:#cbb9a4; transition:background .3s; }
+  .hud-chip:hover{ border-color:var(--teal); color:var(--ink); transform:translateY(-1px); }
+  .hud-chip.active{ background:var(--teal); border-color:var(--teal); color:#FBF6EE; }
+  .hud-chip.active .dot{ background:#FBF6EE; }
+  .hud-pdf{ border-color:var(--peach); color:var(--peach); }
+  .hud-pdf:hover{ background:var(--peach); border-color:var(--peach); color:#FBF6EE; transform:translateY(-1px); }
+  .hud-sep{ width:1px; height:18px; background:rgba(154,140,125,.35); margin:0 3px; }
+  #btn-reset{
+    width:34px; height:34px; border-radius:50%;
+    border:1px solid var(--line); background:rgba(248,242,233,.72);
+    color:var(--teal); font-size:15px; cursor:pointer;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    transition:all .3s ease; display:flex; align-items:center; justify-content:center;
+  }
+  #btn-reset:hover{ background:var(--teal); color:#FBF6EE; border-color:var(--teal); transform:rotate(-25deg); }
+  #key-hint{
+    position:fixed; right:14px; bottom:14px; z-index:20;
+    font-size:10px; color:#b5a898; letter-spacing:1.5px; text-align:right; line-height:1.9;
+    pointer-events:none;
+  }
+  @media (max-width:560px){ #key-hint{ display:none; } }
+
+  /* 详情卡 */
+  #detail{
+    position:fixed; z-index:40; left:50%; top:50%;
+    width:min(640px, 92vw); max-height:84vh;
+    transform:translate(-50%,-50%) translateY(18px) scale(.97);
+    opacity:0; pointer-events:none;
+    transition:opacity .38s ease, transform .38s cubic-bezier(.22,1,.36,1);
+  }
+  #detail.show{ opacity:1; transform:translate(-50%,-50%) translateY(0) scale(1); pointer-events:auto; }
+  #detail .card{
+    position:relative; background:rgba(251,246,238,.92);
+    border:1px solid var(--line); border-radius:18px;
+    box-shadow:0 24px 70px rgba(90,70,50,.16), 0 4px 16px rgba(90,70,50,.06);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    overflow:hidden;
+  }
+  #detail .card-head{
+    padding:22px 28px 14px; border-bottom:1px solid rgba(169,200,187,.4);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  #detail .card-head h3{
+    font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif;
+    font-size:19px; letter-spacing:2px; color:var(--teal); font-weight:700;
+  }
+  #detail .card-head .tag{ font-size:11px; color:var(--sub); letter-spacing:1.5px; }
+  #detail .d-close{
+    width:30px; height:30px; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--teal); font-size:13px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:all .25s; flex:none;
+  }
+  #detail .d-close:hover{ background:var(--teal); color:#FBF6EE; border-color:var(--teal); }
+  #detail .d-body{
+    padding:6px 28px 26px; max-height:calc(84vh - 76px); overflow-y:auto;
+    overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+  }
+  #detail .d-body::-webkit-scrollbar{ width:6px; }
+  #detail .d-body::-webkit-scrollbar-thumb{ background:#d9c9b4; border-radius:3px; }
+  #detail h4{
+    font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif;
+    font-size:14px; letter-spacing:2px; color:var(--teal); margin:18px 0 8px;
+    padding-bottom:6px; border-bottom:1px solid rgba(169,200,187,.35);
+  }
+  #detail h4:first-child{ margin-top:12px; }
+  #detail p{ font-size:13px; line-height:1.85; color:#5a4c3e; margin-bottom:8px; }
+  #detail .d-row{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  #detail .d-row b{
+    min-width:56px; font-size:11px; color:var(--teal); font-weight:700; letter-spacing:1.5px;
+  }
+  #detail .d-row b.wide{ min-width:96px; }
+  #detail .d-sub{ font-size:11px; color:var(--sub); }
+  #detail ul{ list-style:none; }
+  #detail ul li{
+    font-size:12.5px; line-height:1.8; color:#5a4c3e; padding-left:18px; position:relative; margin-bottom:7px;
+  }
+  #detail ul li::before{
+    content:""; position:absolute; left:0; top:9px; width:6px; height:6px;
+    background:var(--peach); border-radius:2px; transform:rotate(45deg);
+  }
+  #detail ul li b{ color:var(--teal); font-weight:700; }
+
+  /* 加载页 */
+  #loader{
+    position:fixed; inset:0; z-index:100; background:var(--cream);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;
+    transition:opacity .7s ease, visibility .7s;
+  }
+  #loader.done{ opacity:0; visibility:hidden; }
+  #loader .l-title{
+    font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif;
+    font-size:26px; letter-spacing:8px; color:var(--ink);
+  }
+  #loader .l-sub{ font-size:11px; letter-spacing:5px; color:var(--sub); }
+  #loader .l-bar{ width:150px; height:2px; background:rgba(154,140,125,.25); border-radius:2px; overflow:hidden; }
+  #loader .l-bar i{
+    display:block; height:100%; width:40%; border-radius:2px;
+    background:linear-gradient(90deg, var(--peach), var(--teal));
+    animation:lbar 1.1s ease-in-out infinite;
+  }
+  @keyframes lbar{ 0%{ transform:translateX(-110%);} 100%{ transform:translateX(280%);} }
+  #fallback{
+    position:fixed; inset:0; z-index:90; display:none;
+    align-items:center; justify-content:center; text-align:center; padding:30px;
+    font-size:14px; color:var(--sub); line-height:2; background:var(--cream);
+  }
+</style>
+</head>
+<body>
+<div id="bg-grad"></div>
+<div id="grain"></div>
+<div id="glow"></div>
+<canvas id="gl"></canvas>
+
+<div id="hint"><span class="hl">←</span> 拖拽旋转 · 滚轮缩放 · 点击查看详情 <span class="hl">→</span></div>
+
+<div id="hud">
+  <button class="hud-chip" data-face="front"><span class="dot"></span>基本信息</button>
+  <button class="hud-chip" data-face="right"><span class="dot"></span>项目一</button>
+  <button class="hud-chip" data-face="back"><span class="dot"></span>项目二</button>
+  <button class="hud-chip" data-face="left"><span class="dot"></span>关于我</button>
+  <span class="hud-sep"></span>
+  <button id="btn-reset" title="回到正面" aria-label="回到正面">⟳</button>
+  <a class="hud-chip hud-pdf" href="resume.pdf" target="_blank" rel="noopener" title="打开 PDF 版简历">PDF 简历</a>
+</div>
+<div id="key-hint">← → 翻面<br>Esc 关闭详情</div>
+
+<div id="detail"></div>
+
+<div id="loader">
+  <div class="l-title">3D RESUME</div>
+  <div class="l-sub">刘原宁 · 2026</div>
+  <div class="l-bar"><i></i></div>
+</div>
+<div id="fallback">3D 引擎加载失败，请刷新重试。<br>也可直接联系：ll3191125498@163.com</div>
+
+<script>
+var started=false;
+function startApp(){
+'use strict';
+  if(started) return; started=true;
+  /* ==================== 配色（makemepulse 暖色低饱和） ==================== */
+  var C = {
+    cream:'#F8F2E9', creamDeep:'#F1E8DA', card:'#FBF6EE',
+    ink:'#463B30', sub:'#9A8C7D',
+    teal:'#5F9482', tealSoft:'#A9C8BB',
+    peach:'#E08A54', peachSoft:'#F3CDB4'
+  };
+  var SERIF = '"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif';
+  var SANS  = '-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif';
+
+  /* ==================== 简历数据（改这里即可更新内容） ==================== */
+  var FACES = [
+    { id:'front', name:'基本信息', label:'RESUME · 2026',
+      type:'front',
+      title:'刘原宁', subtitle:'LIU YUAN NING',
+      role:'Agent 智能体开发工程师', meta:'24 岁 · 河北省承德市',
+      contact:[['TEL','15756494780'],['MAIL','ll3191125498@163.com']],
+      edu:'西南民族大学 · 通信工程 · 工学学士',
+      slogan:'「把 AI 变成能干活的人」',
+      detail:[
+        ['h4','基本信息'],
+        ['row',['求职意向','Agent 智能体开发工程师']],
+        ['row',['TEL','15756494780']],
+        ['row',['MAIL','ll3191125498@163.com']],
+        ['row',['所在地','河北省承德市 · 24 岁']],
+        ['h4','教育背景'],
+        ['p','<b>西南民族大学</b> ｜ 通信工程专业 ｜ 工学学士<br><span class="d-sub">2021.09 – 2026.01</span>'],
+        ['h4','一句话定位'],
+        ['p','从通信工程转战 AI，专注 Agent 与大模型应用落地，能独立承担「模型接入 → 业务编排 → 工程交付」全流程工作。']
+      ]},
+    { id:'right', name:'项目一', label:'PROJECT 01 · 2025.07 – 2026.01',
+      type:'project',
+      title:'文本智能分类引擎',
+      desc:'可插拔 · 高准确率 · 低延迟，嵌入线上推荐系统，覆盖四代模型。',
+      stats:[['82.5% → 95.8%','准确率逐代提升'],['2ms','单条推理延迟']],
+      tags:['FastText','MacBERT','DeepSeek LLM','Flask','Docker Compose'],
+      detail:[
+        ['h4','项目描述'],
+        ['p','某新闻资讯平台日均产生数万条 UGC/PGC 短内容，原有编辑人工分拣模式效率低下、分类标准不一，导致内容投递延迟严重。该项目是一套可插拔、高准确率、低延迟的文本分类引擎，直接嵌入线上推荐系统，覆盖 RF、FastText、MacBERT、DeepSeek LLM 四代模型。'],
+        ['h4','技术栈'],
+        ['p','scikit-learn（RF+GBDT 集成）、jieba 分词、TF-IDF、FastText、PyTorch + MacBERT（ModelScope 微调）、DeepSeek API（OpenAI SDK）、Flask + Blueprint、Streamlit、Docker Compose、pytest、Git'],
+        ['h4','核心工作：四版本递进式方案'],
+        ['ul',[
+          '<b>v1</b> 随机森林 + GBDT 软投票（jieba → TF-IDF 1-2gram）；<b>v2</b> FastText（字级/词级双路径 + AutoTune 自动调参）；<b>v3</b> MacBERT（16 轮微调，max_length=32）；<b>v4</b> DeepSeek LLM（零训练、精简 Prompt）——准确率从 82.5% 逐级提升至 95.8%。',
+          'Flask 应用工厂 + Blueprint 架构，四版本独立蓝图 / 路由分离（/api/v1 ~ v4），统一 JSON 响应格式，模型可插拔。',
+          'Docker Compose 双容器部署，Streamlit 前端（LUMINA 设计），pytest + benchmark 全覆盖。'
+        ]],
+        ['h4','项目成果'],
+        ['p','准确率逐版本递进（82.5% → 95.8%），v3 推理 2ms、v2 4.9ms，满足实时推荐场景。交付从数据预处理到 Docker 部署的全链路可运行系统，支持一键训练与一键启动。']
+      ]},
+    { id:'back', name:'项目二', label:'PROJECT 02 · 2026.01 – 2026.07',
+      type:'project',
+      title:'LangGraph 多智能体智能助教系统',
+      desc:'四大智能体 + RAG 检索 + 人工复核闭环的 AI 教学平台。',
+      stats:[['0.70 → 0.85','RAG 精排 Recall@5'],['100%','复核闭环成功率']],
+      tags:['LangGraph','Milvus','FastAPI','HitL','SSE'],
+      detail:[
+        ['h4','项目描述'],
+        ['p','某职业培训机构日均产生大量学生答疑、作业提交与模拟面试需求，原有教师人工处理模式效率低下、标准不一。该项目是一套可插拔、多智能体、带人工复核闭环的 AI 教学助教平台，覆盖智能问答、试卷批改、模拟面试、简历审查四大教学场景。'],
+        ['h4','技术栈'],
+        ['p','LangGraph + LangChain、FastAPI、PostgreSQL、Milvus、BGE-M3 / BGE-Reranker / MiniLM（本地推理）、DeepSeek API、PyMuPDF、Docker Compose、Vue3、pytest'],
+        ['h4','核心工作'],
+        ['ul',[
+          '<b>智能问答</b>：RAG 链路（文档解析 → chunk 切分 → BGE-M3 向量入库 → Milvus 召回 Top30 → Reranker 精排 Top5），意图分类用 MiniLM 本地模型，检索与分类全程不出内网；无结果 / 低置信度转人工兜底。',
+          '<b>试卷批改</b>：基于 LangGraph interrupt + AsyncPostgresSaver 实现 Human-in-the-loop——AI 按评分点初评 → 汇总后暂停 → 教师复核改分 → 发布成绩，状态机与数据库约束逐字对齐，跨请求、跨进程可恢复。',
+          '<b>模拟面试</b>：五阶段状态机多轮对话，动态追问 + 评分报告；<b>简历审查</b>：PDF 解析 → 结构化提取 → 六维度并行评分（asyncio.gather）→ 问题清单与建议。',
+          '<b>编排器</b>：按意图路由四智能体，统一对话入口 SSE 流式输出（chunk/done/error 事件），session_id 支撑多轮上下文。',
+          '本地模型 Docker 部署 + DeepSeek API 混合路由控制成本；解决 transformers / FlagEmbedding 版本兼容、Windows 事件循环兼容问题。'
+        ]],
+        ['h4','项目成果'],
+        ['p','四大智能体 + 统一入口端到端跑通，批改-复核闭环成功率 100%（示例），检索 Recall@5 由纯向量 0.70 提升至 0.85（示例），主观题评分方差由 ±8 收敛至 ±1（示例）；交付从知识库构建、智能体编排到 Docker Compose 部署的全链路可运行系统，支持私有化部署与一键启动。']
+      ]},
+    { id:'left', name:'关于我', label:'ABOUT ME',
+      type:'about',
+      title:'从通信工程到 Agent 开发',
+      lines:['完整项目经验：模型接入 → 业务编排 → 工程交付','工程化思维 · 快速学习 · 乐于把新技术落地','业余阅读写作 · 逻辑思维 · 抗压能力强'],
+      skills:[['AGENT','LangChain · LangGraph · HitL · SSE'],['RAG','Milvus · BGE-M3 · Reranker'],['模型','PyTorch · MacBERT · scikit-learn'],['后端','FastAPI · PostgreSQL · Docker']],
+      detail:[
+        ['h4','自我评价'],
+        ['p','具备大模型应用与智能体（Agent）开发的完整项目经验，从 RAG 检索链路、多智能体编排到人工复核闭环均有实际落地，能独立承担「模型接入 → 业务编排 → 工程交付」全流程工作。'],
+        ['p','掌握传统机器学习与深度学习基础（文本分类、模型微调、模型压缩），技术栈覆盖 LangChain / LangGraph、FastAPI、Milvus、Docker 等主流工程体系。'],
+        ['p','从通信工程专业转到 AI 行业，注重工程化思维，学习能力强，对 Agent、RAG 等前沿方向保持持续跟进，乐于把新技术落地为可用的系统。'],
+        ['p','业余爱好阅读写作，具备逻辑思维与抗压能力，能快速融入团队。希望在 AI 领域持续深入。'],
+        ['h4','技能全景'],
+        ['ul',[
+          '<b>Agent 工程</b>LangChain / LangGraph 智能体编排、意图分类与多智能体路由、HitL（interrupt 暂停 / 恢复）、状态机、SSE 流式',
+          '<b>RAG 与检索</b>Milvus 向量检索、BGE-M3 Embedding、BGE-Reranker 精排、chunk 切分、文档解析',
+          '<b>机器学习</b>scikit-learn、Pandas、NumPy、随机森林、GBDT、FastText',
+          '<b>深度学习</b>PyTorch、BERT / MacBERT 微调与部署、模型量化 / 蒸馏 / 剪枝',
+          '<b>大模型应用</b>DeepSeek / OpenAI API、Prompt Engineering、混合路由与成本控制',
+          '<b>Web 后端</b>FastAPI 异步开发、RESTful API、JWT 鉴权、PostgreSQL（异步 SQLAlchemy / JSONB）',
+          '<b>工具链</b>Git、Docker Compose、pytest、asyncio、jieba / TF-IDF'
+        ]]
+      ]}
+  ];
+
+  var FACE_YAW = { front:0, right:-Math.PI/2, back:Math.PI, left:Math.PI/2 };
+  var ORDER    = ['front','left','back','right'];   // yaw = idx * π/2 时正对相机的面（HUD 映射用）
+  var NARR     = ['front','right','back','left'];   // 阅读顺序（→ / 下一面）
+
+  /* ==================== Canvas 绘制工具 ==================== */
+  function makeCanvas(){
+    var c=document.createElement('canvas');
+    c.width=1024; c.height=1024;   // 分辨率贴近屏幕上面的大小，缩小倍率小 → 文字清晰
+    return c;
+  }
+  function rr(ctx,x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);     ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+  function hexPath(ctx,cx,cy,r){
+    ctx.beginPath();
+    for(var i=0;i<6;i++){
+      var a=Math.PI/180*(60*i-90), px=cx+r*Math.cos(a), py=cy+r*Math.sin(a);
+      if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+    }
+    ctx.closePath();
+  }
+  function wrapText(ctx,text,maxW){
+    var CLOSE='，。、；：！？）】》」』,.';
+    var lines=[],line='';
+    for(var i=0;i<text.length;i++){
+      var ch=text[i], t=line+ch;
+      // 行首标点（，。等）不许换行：紧贴上一行
+      if(ctx.measureText(t).width>maxW && line && CLOSE.indexOf(ch)<0){ lines.push(line); line=ch; }
+      else line=t;
+    }
+    if(line) lines.push(line);
+    return lines;
+  }
+  function fitFont(ctx,text,maxW,maxSize,minSize,weight,family){
+    var size=maxSize;
+    while(size>minSize){ ctx.font=weight+' '+size+'px '+family; if(ctx.measureText(text).width<=maxW) break; size-=2; }
+    return size;
+  }
+  function faceBase(ctx){
+    var g=ctx.createLinearGradient(0,0,0,1024);
+    g.addColorStop(0,C.card); g.addColorStop(1,C.cream);
+    ctx.fillStyle=g; ctx.fillRect(0,0,1024,1024);
+    ctx.strokeStyle=C.teal; ctx.lineWidth=3;
+    rr(ctx,10,10,1004,1004,26); ctx.stroke();
+    ctx.strokeStyle='rgba(95,148,130,.22)'; ctx.lineWidth=1.5;
+    rr(ctx,26,26,972,972,18); ctx.stroke();
+  }
+  function chip(ctx,text,x,y,fill,border,textColor){
+    ctx.font='500 24px '+SANS;
+    var w=ctx.measureText(text).width+30, h=44;
+    ctx.fillStyle=fill; rr(ctx,x,y,w,h,22); ctx.fill();
+    ctx.strokeStyle=border; ctx.lineWidth=2; rr(ctx,x,y,w,h,22); ctx.stroke();
+    ctx.fillStyle=textColor; ctx.textBaseline='middle';
+    ctx.fillText(text,x+15,y+h/2+1);
+    return w;
+  }
+
+  /* ==================== 各面绘制 ==================== */
+  function drawFront(ctx,f){
+    faceBase(ctx);
+    ctx.textBaseline='alphabetic';
+    ctx.fillStyle=C.teal; ctx.font='600 26px '+SANS; ctx.letterSpacing='8px';
+    ctx.fillText(f.label,72,120);
+    ctx.letterSpacing='0px';
+    ctx.fillStyle=C.ink; ctx.font='700 132px '+SERIF; ctx.letterSpacing='10px';
+    ctx.fillText(f.title,72,300);
+    ctx.fillStyle=C.teal; ctx.font='600 30px '+SANS; ctx.letterSpacing='8px';
+    ctx.fillText(f.subtitle,76,352);
+    var g=ctx.createLinearGradient(72,390,952,390);
+    g.addColorStop(0,C.peach); g.addColorStop(1,C.teal);
+    ctx.fillStyle=g; ctx.fillRect(72,390,880,3);
+    ctx.fillStyle=C.ink; ctx.font='600 44px '+SANS; ctx.letterSpacing='2px';
+    ctx.fillText(f.role,72,470);
+    ctx.fillStyle=C.sub; ctx.font='400 28px '+SANS;
+    ctx.fillText(f.meta,72,520);
+    f.contact.forEach(function(c,i){
+      chip(ctx,c[0],72,548+i*56,C.teal,C.teal,'#FBF6EE');
+      ctx.fillStyle=C.ink; ctx.font='400 30px '+SANS; ctx.letterSpacing='1px';
+      ctx.fillText(c[1],72+ (ctx.measureText(c[0]).width+46), 570+i*56);
+    });
+    ctx.textBaseline='alphabetic';
+    ctx.fillStyle=C.sub; ctx.font='400 26px '+SANS;
+    ctx.fillText(f.edu,72,680);
+    ctx.fillStyle=C.peach; ctx.font='400 36px '+SERIF;
+    ctx.fillText(f.slogan,72,760);
+    ctx.fillStyle='rgba(154,140,125,.75)'; ctx.font='400 23px '+SANS; ctx.letterSpacing='4px';
+    ctx.textAlign='center';
+    ctx.fillText(f.hint,512,930);
+    ctx.textAlign='left'; ctx.letterSpacing='0px';
+  }
+  function drawProject(ctx,f){
+    faceBase(ctx);
+    ctx.fillStyle=C.teal; ctx.font='600 25px '+SANS; ctx.letterSpacing='6px';
+    ctx.fillText(f.label,72,110);
+    ctx.letterSpacing='0px';
+    // 标题：先设字体再测量换行（避免用错字号导致溢出）
+    ctx.fillStyle=C.ink; ctx.font='700 64px '+SERIF; ctx.letterSpacing='2px';
+    var titleLines=wrapText(ctx,f.title,880);
+    titleLines.forEach(function(l,i){ ctx.fillText(l,72,198+i*82); });
+    // 描述：先设字体再测量换行
+    ctx.fillStyle=C.sub; ctx.font='400 27px '+SANS; ctx.letterSpacing='0px';
+    var descLines=wrapText(ctx,f.desc,880);
+    descLines.forEach(function(l,i){ ctx.fillText(l,72,320+(titleLines.length-1)*82+i*46); });
+    var yBase=320+(titleLines.length-1)*82+descLines.length*46+30;
+    f.stats.forEach(function(s,i){
+      var x=72+i*456, w=440, h=194;
+      ctx.fillStyle='rgba(240,220,200,.55)'; rr(ctx,x,yBase,w,h,20); ctx.fill();
+      ctx.strokeStyle='rgba(224,138,84,.4)'; ctx.lineWidth=2.5; rr(ctx,x,yBase,w,h,20); ctx.stroke();
+      ctx.fillStyle=C.peach; ctx.textAlign='center';
+      var fs=fitFont(ctx,s[0],w-32,52,24,'700',SERIF);   // 数字过长自动缩小，防止超出橙色框
+      ctx.fillText(s[0],x+w/2,yBase+84);
+      ctx.fillStyle=C.sub; ctx.font='400 24px '+SANS; ctx.letterSpacing='2px';
+      ctx.fillText(s[1],x+w/2,yBase+136);
+      ctx.textAlign='left'; ctx.letterSpacing='0px';
+    });
+    var ty=yBase+194+32;
+    var tx=72;
+    f.tags.forEach(function(t){
+      ctx.font='500 26px '+SANS;
+      var w=ctx.measureText(t).width+34;
+      if(tx+w>952){ tx=72; ty+=56; }
+      ctx.fillStyle='rgba(169,200,187,.22)'; rr(ctx,tx,ty,w,46,23); ctx.fill();
+      ctx.strokeStyle='rgba(95,148,130,.5)'; ctx.lineWidth=2; rr(ctx,tx,ty,w,46,23); ctx.stroke();
+      ctx.fillStyle=C.teal; ctx.textBaseline='middle';
+      ctx.fillText(t,tx+17,ty+24);
+      ctx.textBaseline='alphabetic';
+      tx+=w+14;
+    });
+    ctx.fillStyle='rgba(154,140,125,.75)'; ctx.font='400 23px '+SANS; ctx.letterSpacing='4px';
+    ctx.textAlign='center'; ctx.fillText('点击查看详情 →',512,956);
+    ctx.textAlign='left'; ctx.letterSpacing='0px';
+  }
+  function drawAbout(ctx,f){
+    faceBase(ctx);
+    ctx.fillStyle=C.teal; ctx.font='600 25px '+SANS; ctx.letterSpacing='6px';
+    ctx.fillText(f.label,72,110);
+    ctx.letterSpacing='0px';
+    // 标题：先设字体再测量换行；与下方要点留足间距，避免 g 等下伸部重叠
+    ctx.fillStyle=C.ink; ctx.font='700 44px '+SERIF; ctx.letterSpacing='2px';
+    var titleLines=wrapText(ctx,f.title,880);
+    titleLines.forEach(function(l,i){ ctx.fillText(l,72,178+i*60); });
+    var y=178+(titleLines.length-1)*60+42;
+    f.lines.forEach(function(l){
+      ctx.fillStyle=C.peach; ctx.fillRect(72,y-16,9,9);
+      ctx.fillStyle='#5a4c3e'; ctx.font='400 27px '+SANS; ctx.letterSpacing='0px';
+      ctx.fillText(l,98,y);
+      y+=52;
+    });
+    y+=20;
+    var g=ctx.createLinearGradient(72,y,952,y);
+    g.addColorStop(0,C.peach); g.addColorStop(1,C.teal);
+    ctx.fillStyle=g; ctx.fillRect(72,y,880,2.5);
+    y+=40;
+    f.skills.forEach(function(s,i){
+      var col=i%2, row=Math.floor(i/2), x=72+col*452, yy=y+row*150, w=436, h=130;
+      ctx.fillStyle='rgba(169,200,187,.16)'; rr(ctx,x,yy,w,h,16); ctx.fill();
+      ctx.strokeStyle='rgba(95,148,130,.35)'; ctx.lineWidth=2; rr(ctx,x,yy,w,h,16); ctx.stroke();
+      ctx.fillStyle=C.teal; ctx.font='700 24px '+SANS; ctx.letterSpacing='3px';
+      ctx.fillText(s[0],x+24,yy+44);
+      ctx.fillStyle='#5a4c3e'; ctx.font='400 25px '+SANS; ctx.letterSpacing='0px';
+      wrapText(ctx,s[1],w-48).slice(0,2).forEach(function(l,i2){ ctx.fillText(l,x+24,yy+84+i2*32); });
+    });
+    ctx.letterSpacing='0px';
+  }
+  function drawCap(ctx,big,small){
+    faceBase(ctx);
+    ctx.strokeStyle=C.teal; ctx.lineWidth=4;
+    hexPath(ctx,512,512,300); ctx.stroke();
+    ctx.fillStyle='rgba(169,200,187,.18)';
+    hexPath(ctx,512,512,300); ctx.fill();
+    ctx.strokeStyle=C.teal; ctx.lineWidth=3;
+    hexPath(ctx,512,512,240); ctx.stroke();
+    ctx.fillStyle=C.teal; ctx.font='700 64px '+SERIF; ctx.textAlign='center';
+    ctx.fillText(big,512,496);
+    ctx.fillStyle=C.sub; ctx.font='400 26px '+SANS; ctx.letterSpacing='6px';
+    ctx.fillText(small,512,566);
+    ctx.textAlign='left'; ctx.letterSpacing='0px';
+  }
+
+  /* ==================== 详情卡构建 ==================== */
+  function buildDetail(f){
+    var html='<div class="card"><div class="card-head"><h3>'+f.name+'</h3>'+
+      '<span class="tag">'+f.label+'</span><button class="d-close" aria-label="关闭">✕</button></div>'+
+      '<div class="d-body">';
+    f.detail.forEach(function(blk){
+      if(blk[0]==='h4') html+='<h4>'+blk[1]+'</h4>';
+      else if(blk[0]==='p') html+='<p>'+blk[1]+'</p>';
+      else if(blk[0]==='row') html+='<p class="d-row"><b>'+blk[1][0]+'</b><span>'+blk[1][1]+'</span></p>';
+      else if(blk[0]==='ul') html+='<ul>'+blk[1].map(function(li){return '<li>'+li+'</li>';}).join('')+'</ul>';
+    });
+    html+='</div></div>';
+    return html;
+  }
+
+  /* ==================== Three.js 场景 ==================== */
+  var canvas=document.getElementById('gl');
+  var renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setClearColor(0x000000,0);
+
+  var scene=new THREE.Scene();
+  var camera=new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, 0.1, 100);
+  function defaultCamZ(){ return window.innerWidth/window.innerHeight<0.7 ? 6.6 : 5.4; }
+  var CAM_FAR=defaultCamZ(), CAM_NEAR=3.4;
+  var camZ=CAM_FAR;
+  camera.position.set(0,0,camZ);
+  camera.lookAt(0,0,0);
+
+  var SIZE=2.5, HALF=SIZE/2;
+  var cube=new THREE.Group();
+  cube.rotation.order='YXZ';
+  cube.rotation.set(0,0,0);          // 初始正视（无倾斜）
+  scene.add(cube);
+
+  function makeTexture(canvas){
+    var t=new THREE.CanvasTexture(canvas);
+    t.generateMipmaps=true;                 // 开启 mipmap：消除旋转/远处时的摩尔纹与闪烁
+    t.minFilter=THREE.LinearMipmapLinearFilter;
+    t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),16);
+    return t;
+  }
+  function makeFaceMesh(canvasTex){
+    var geo=new THREE.PlaneGeometry(SIZE,SIZE);
+    var mat=new THREE.MeshBasicMaterial({map:canvasTex, side:THREE.DoubleSide, transparent:true});
+    return new THREE.Mesh(geo,mat);
+  }
+
+  var faces={};
+  FACES.forEach(function(f){
+    var ctx=makeCanvas().getContext('2d');
+    if(f.type==='front') drawFront(ctx,f);
+    else if(f.type==='project') drawProject(ctx,f);
+    else drawAbout(ctx,f);
+    var tex=makeTexture(ctx.canvas);
+    var mesh=makeFaceMesh(tex);
+    mesh.userData.faceId=f.id;
+    faces[f.id]=mesh;
+    cube.add(mesh);
+  });
+  // 顶底装饰盖（保留引用，用于射线遮挡：点击顶底时不再穿透命中背面）
+  var capTopCtx=makeCanvas().getContext('2d'); drawCap(capTopCtx,'2026','RESUME');
+  var capBottomCtx=makeCanvas().getContext('2d'); drawCap(capBottomCtx,'LIU','YUAN NING');
+  function capMesh(tex,rotX,posY){
+    var m=new THREE.Mesh(new THREE.PlaneGeometry(SIZE,SIZE),
+      new THREE.MeshBasicMaterial({map:makeTexture(tex.canvas), side:THREE.DoubleSide, transparent:true}));
+    m.rotation.x=rotX; m.position.y=posY;
+    return m;
+  }
+  var capTop=capMesh(capTopCtx,Math.PI/2,HALF);
+  var capBottom=capMesh(capBottomCtx,-Math.PI/2,-HALF);
+  cube.add(capTop); cube.add(capBottom);
+  // 面定位
+  faces.front.position.set(0,0,HALF);
+  faces.back.rotation.y=Math.PI; faces.back.position.set(0,0,-HALF);
+  faces.right.rotation.y=Math.PI/2; faces.right.position.set(HALF,0,0);
+  faces.left.rotation.y=-Math.PI/2; faces.left.position.set(-HALF,0,0);
+
+  /* ==================== 背景粒子（鼠标可扰动） ==================== */
+  var spriteTex=(function(){
+    var c=document.createElement('canvas'); c.width=64; c.height=64;
+    var x=c.getContext('2d');
+    var g=x.createRadialGradient(32,32,0,32,32,32);
+    g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,255,255,0)');
+    x.fillStyle=g; x.fillRect(0,0,64,64);
+    return new THREE.CanvasTexture(c);
+  })();
+  function makeParticles(count,zMin,zMax,size,opacity){
+    var pos=new Float32Array(count*3), col=new Float32Array(count*3), home=[];
+    var palette=['#E08A54','#F3CDB4','#A9C8BB','#5F9482','#EFC0A6','#D9C9B4'];
+    for(var i=0;i<count;i++){
+      var a=Math.random()*Math.PI*2, r=1.2+Math.random()*3.2;
+      var x=Math.cos(a)*r, y=(Math.random()-0.5)*4.2, z=zMin+Math.random()*(zMax-zMin);
+      pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z; home.push(x,y,z);
+      var pc=new THREE.Color(palette[i%palette.length]);
+      col[i*3]=pc.r; col[i*3+1]=pc.g; col[i*3+2]=pc.b;
+    }
+    var geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+    var mat=new THREE.PointsMaterial({size:size, map:spriteTex, transparent:true,
+      opacity:opacity, vertexColors:true, depthWrite:false, sizeAttenuation:true});
+    var pts=new THREE.Points(geo,mat);
+    scene.add(pts);
+    return {pts:pts, home:home, count:count, pos:pos, vel:new Float32Array(count*3)};
+  }
+  var farP=makeParticles(90,-5.5,1,0.045,0.32);
+  var nearP=makeParticles(55,1.5,5,0.075,0.55);
+
+  /* ==================== 交互状态 ==================== */
+  var yaw=0, pitch=0, camZ=CAM_FAR;
+  var dragging=false, moved=false, tourRunning=false, expanded=null;
+  var lastX=0, startX=0, startY=0;
+  var mouseNDC=new THREE.Vector2(0,0), mouseScreen={x:-9999,y:-9999};
+  var raycaster=new THREE.Raycaster(), ndc=new THREE.Vector2();
+  var hovered=null, lastInteract=performance.now();
+
+  var nrm=function(r){ r=r%(Math.PI*2); if(r<0)r+=Math.PI*2; return r; };
+  var faceOf=function(){ var idx=Math.round(nrm(yaw)/(Math.PI/2))%4; return ORDER[idx]; };
+  function applyRotation(){ cube.rotation.y=yaw; cube.rotation.x=pitch; }
+
+  /* 缓动引擎 */
+  var tweens=[];
+  function animate(get,set,to,dur,ease,cb){
+    var from=get(), t0=performance.now(), t={running:true};
+    t.step=function(now){
+      var k=Math.min(1,(now-t0)/dur);
+      set(from+(to-from)*ease(k));
+      if(k>=1){ t.running=false; if(cb)cb(); }
+    };
+    tweens.push(t); return t;
+  }
+  function easeInOutCubic(k){ return k<.5 ? 4*k*k*k : 1-Math.pow(-2*k+2,3)/2; }
+  function easeOutCubic(k){ return 1-Math.pow(1-k,3); }
+  function easeOutBack(k){ var c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(k-1,3) + c1*Math.pow(k-1,2); }
+  function shortestDelta(to){ var d=nrm(to)-nrm(yaw); if(d>Math.PI)d-=Math.PI*2; if(d<-Math.PI)d+=Math.PI*2; return d; }
+  var yawTween=null;
+  function yawAnimate(to,dur,ease,cb){
+    if(yawTween) yawTween.running=false;
+    yawTween=animate(function(){return yaw;},function(v){yaw=v;applyRotation();},yaw+shortestDelta(to),dur,ease,cb);
+    return yawTween;
+  }
+  function tweenYawTo(to,dur,cb){ return yawAnimate(to,dur,easeOutCubic,cb); }   // 拖拽吸附：平滑
+  function twistYawTo(to,dur,cb){ return yawAnimate(to,dur,easeOutBack,cb); }    // 按钮/点击：魔方拧动
+  function navToFace(id){
+    if(tourRunning) return;
+    if(!FACE_YAW.hasOwnProperty(id)) return;
+    if(expanded) closeDetail();
+    updateHud(id);
+    twistYawTo(FACE_YAW[id],430);
+  }
+  function tweenCamZ(to,dur,cb){ animate(function(){return camZ;},function(v){camZ=v;camera.position.z=v;},to,dur,easeOutCubic,cb); }
+
+  function snap(){
+    var target=Math.round(nrm(yaw)/(Math.PI/2))*(Math.PI/2);
+    if(target>=Math.PI*2) target=0;
+    tweenYawTo(target,500);
+    if(pitch>0.175||pitch<-0.175){
+      animate(function(){return pitch;},function(v){pitch=v;applyRotation();},
+        Math.max(-0.175,Math.min(0.175,pitch)),360,easeOutCubic);
+    }
+    updateHud(ORDER[Math.round(nrm(target)/(Math.PI/2))%4]);
+  }
+
+  /* ==================== 详情开合 ==================== */
+  var detailEl=document.getElementById('detail');
+  function openFace(id){
+    if(tourRunning) return;
+    if(!FACE_YAW.hasOwnProperty(id)) return;
+    if(expanded===id){ closeDetail(); return; }
+    if(expanded) closeDetail();
+    updateHud(id);
+    twistYawTo(FACE_YAW[id],380,function(){
+      expanded=id;
+      detailEl.innerHTML=buildDetail(FACES.filter(function(f){return f.id===id;})[0]);
+      detailEl.classList.add('show');
+      tweenCamZ(CAM_NEAR,560);
+    });
+  }
+  function closeDetail(){
+    if(!expanded) return;
+    detailEl.classList.remove('show');
+    expanded=null;
+    tweenCamZ(defaultCamZ(),520);
+    updateHud();
+  }
+  detailEl.addEventListener('click',function(e){
+    if(e.target.closest('.d-close')) closeDetail();
+  });
+
+  /* ==================== 指针交互 ==================== */
+  var glEl=canvas;
+  var outsideTap=false;
+  glEl.addEventListener('pointerdown',function(e){
+    if(tourRunning) return;
+    if(expanded){ outsideTap=true; return; }
+    dragging=true; moved=false;
+    startX=lastX=e.clientX; startY=e.clientY;
+    glEl.classList.add('grabbing'); glEl.classList.remove('hovering');
+    try{ glEl.setPointerCapture(e.pointerId); }catch(err){}
+    lastInteract=performance.now();
+  });
+  glEl.addEventListener('pointermove',function(e){
+    mouseScreen.x=e.clientX; mouseScreen.y=e.clientY;
+    mouseNDC.x=(e.clientX/window.innerWidth)*2-1;
+    mouseNDC.y=-(e.clientY/window.innerHeight)*2+1;
+    var glow=document.getElementById('glow');
+    glow.style.left=e.clientX+'px'; glow.style.top=e.clientY+'px';
+    if(dragging){
+      var dx=e.clientX-lastX; lastX=e.clientX;
+      if(Math.abs(e.clientX-startX)>5||Math.abs(e.clientY-startY)>5) moved=true;
+      yaw-=dx*0.0085;
+      pitch-= (e.clientY-startY)*0.004;
+      pitch=Math.max(-0.175,Math.min(0.175,pitch));
+      applyRotation(); lastInteract=performance.now();
+    } else {
+      pick(e);
+    }
+  });
+  glEl.addEventListener('pointerleave',function(){ mouseScreen.x=-9999; mouseScreen.y=-9999; });
+  function onUp(e){
+    if(outsideTap){ outsideTap=false; if(!moved) closeDetail(); return; }
+    if(!dragging) return;
+    dragging=false;
+    glEl.classList.remove('grabbing');
+    if(!moved){
+      var hit=pick(e,true);
+      if(hit) openFace(hit.userData.faceId);
+      else if(expanded) closeDetail();
+      else updateHud();
+    } else {
+      snap();
+    }
+  }
+  glEl.addEventListener('pointerup',onUp);
+  glEl.addEventListener('pointercancel',onUp);
+  glEl.addEventListener('wheel',function(e){
+    e.preventDefault();
+    if(tourRunning||expanded) return;
+    var target=Math.max(3.2,Math.min(9,camZ+e.deltaY*0.004));
+    tweenCamZ(target,300); lastInteract=performance.now();
+  },{passive:false});
+  document.addEventListener('mousemove',function(){ document.body.classList.add('has-pointer'); },{once:true});
+
+  function pick(e,force){
+    ndc.x=(e.clientX/window.innerWidth)*2-1;
+    ndc.y=-(e.clientY/window.innerHeight)*2+1;
+    raycaster.setFromCamera(ndc,camera);
+    var hits=raycaster.intersectObjects([faces.front,faces.back,faces.right,faces.left,capTop,capBottom],false);
+    var faceObj=null;
+    for(var i=0;i<hits.length;i++){ if(hits[i].object.userData.faceId){ faceObj=hits[i].object; break; } }
+    if(force) return faceObj;
+    var id=faceObj?faceObj.userData.faceId:null;
+    if(id!==hovered){
+      if(hovered) faces[hovered].material.color.set('#ffffff');
+      hovered=id;
+      if(hovered){ faces[hovered].material.color.set('#f1e3cf'); glEl.classList.add('hovering'); }
+      else glEl.classList.remove('hovering');
+    }
+    return null;
+  }
+
+  /* ==================== HUD / 键盘 ==================== */
+  var chips=Array.prototype.slice.call(document.querySelectorAll('.hud-chip'));
+  function updateHud(face){
+    var f=face||faceOf();
+    chips.forEach(function(c){ c.classList.toggle('active',c.dataset.face===f); });
+  }
+  chips.forEach(function(c){
+    c.addEventListener('click',function(){ navToFace(c.dataset.face); });
+  });
+  document.getElementById('btn-reset').addEventListener('click',function(){
+    if(tourRunning) return;
+    if(expanded) closeDetail();
+    updateHud('front');
+    twistYawTo(0,430);
+    animate(function(){return pitch;},function(v){pitch=v;applyRotation();},0,360,easeOutCubic);
+  });
+  window.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){ closeDetail(); return; }
+    if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+      var cur=faceOf(), i=NARR.indexOf(cur), dir=e.key==='ArrowRight'?1:-1;
+      var next=NARR[(i+dir+NARR.length)%NARR.length];
+      navToFace(next);
+    }
+  });
+
+  /* ==================== 开场导览：一圈约 2 秒 ==================== */
+  function runTour(){
+    tourRunning=true;
+    document.getElementById('hint').innerHTML='RESUME TOUR · 自动导览中…';
+    var startYaw=yaw;
+    animate(function(){return yaw;},function(v){ yaw=v; applyRotation(); updateHud(); },
+      startYaw-2*Math.PI, 2100, easeInOutCubic, function(){
+        tourRunning=false; yaw=0; applyRotation();
+        document.getElementById('hint').innerHTML=
+          '<span class="hl">←</span> 拖拽旋转 · 滚轮缩放 · 点击查看详情 <span class="hl">→</span>';
+        updateHud();
+      });
+    updateHud();
+  }
+
+  /* ==================== 渲染循环 ==================== */
+  function updateParticles(layer,dt){
+    var pos=layer.pos, home=layer.home, vel=layer.vel, n=layer.count;
+    var mw=null;
+    if(mouseScreen.x>-9000){
+      var v=new THREE.Vector3(mouseNDC.x,mouseNDC.y,0.5).unproject(camera);
+      if(Math.abs(v.z)>0.0001){
+        var t=-camera.position.z/v.z;
+        mw=new THREE.Vector3(v.x*t,v.y*t,0);   // z=0 平面上的鼠标世界坐标
+      }
+    }
+    for(var i=0;i<n;i++){
+      var ix=i*3, hx=home[ix], hy=home[ix+1], hz=home[ix+2];
+      var px=pos[ix], py=pos[ix+1];
+      var ox=px-hx, oy=py-hy;
+      if(mw){
+        var dx=px-mw.x, dy=py-mw.y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<0.55&&d>0.001){
+          var f=(1-d/0.55)*0.35;
+          vel[ix]+=(dx/d)*f*dt*10; vel[ix+1]+=(dy/d)*f*dt*10;
+        }
+      }
+      vel[ix]+=-ox*0.35*dt*10; vel[ix+1]+=-oy*0.35*dt*10;
+      vel[ix]*=0.94; vel[ix+1]*=0.94;
+      var par=layer===nearP?0.10:0.045;
+      pos[ix]=hx+ox+vel[ix]+mouseNDC.x*par*hz*0.5;
+      pos[ix+1]=hy+oy+vel[ix+1]-mouseNDC.y*par*hz*0.5;
+      pos[ix+2]=hz;
+    }
+    layer.pts.geometry.attributes.position.needsUpdate=true;
+  }
+  var clock=new THREE.Clock();
+  function loop(){
+    requestAnimationFrame(loop);
+    var dt=Math.min(clock.getDelta(),0.05);
+    var now=performance.now();
+    tweens.forEach(function(t){ if(t.running) t.step(now); });
+    // 空闲缓慢自转（方向与阅读顺序一致：向右 → 下一面）
+    var idle=false;
+    if(!dragging&&!tourRunning&&!expanded&&now-lastInteract>8000){ yaw-=dt*0.10; idle=true; }
+    applyRotation();
+    if(idle) updateHud();
+    updateParticles(farP,dt);
+    updateParticles(nearP,dt);
+    renderer.render(scene,camera);
+  }
+
+  /* ==================== 启动 ==================== */
+  function resize(){
+    var w=window.innerWidth,h=window.innerHeight;
+    renderer.setSize(w,h);
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+    if(!expanded){ camZ=defaultCamZ(); camera.position.z=camZ; }
+  }
+  window.addEventListener('resize',resize);
+  updateHud();
+  loop();
+  function whenReady(fn){ if(document.readyState==='complete') fn(); else window.addEventListener('load',fn); }
+  whenReady(function(){
+    setTimeout(function(){ document.getElementById('loader').classList.add('done'); },500);
+    setTimeout(runTour,650);
+  });
+} /* end startApp */
+
+/* ==================== Three.js CDN 加载（多源备选，按顺序尝试） ==================== */
+var CDNS=[
+  'https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.min.js',
+  'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+  'https://unpkg.com/three@0.128.0/build/three.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+];
+function loadThree(i){
+  if(window.THREE){ startApp(); return; }
+  if(i>=CDNS.length){
+    var fb=document.getElementById('fallback');
+    fb.style.display='flex';
+    document.getElementById('loader').classList.add('done');
+    return;
+  }
+  var s=document.createElement('script');
+  s.src=CDNS[i];
+  s.onload=function(){ startApp(); };
+  s.onerror=function(){ loadThree(i+1); };
+  document.head.appendChild(s);
+}
+loadThree(0);
+</script>
+</body>
+</html>
