@@ -120,6 +120,16 @@
     pointer-events:none;
   }
   @media (max-width:560px){ #key-hint{ display:none; } }
+  /* 语言切换按钮 */
+  #btn-lang{
+    position:fixed; top:16px; right:16px; z-index:25;
+    border:1px solid var(--line); background:rgba(248,242,233,.72);
+    color:var(--teal); font-size:12px; letter-spacing:1px; font-weight:700;
+    padding:6px 15px; border-radius:999px; cursor:pointer;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    transition:all .3s ease;
+  }
+  #btn-lang:hover{ background:var(--teal); color:#FBF6EE; border-color:var(--teal); }
 
   /* 详情卡 */
   #detail{
@@ -214,6 +224,7 @@
 <canvas id="gl"></canvas>
 
 <div id="hint"><span class="hl">←</span> 拖拽旋转 · 滚轮缩放 · 点击查看详情 <span class="hl">→</span></div>
+<button id="btn-lang" title="切换语言 / Switch language">EN</button>
 
 <div id="hud">
   <button class="hud-chip" data-face="front"><span class="dot"></span>基本信息</button>
@@ -222,7 +233,7 @@
   <button class="hud-chip" data-face="left"><span class="dot"></span>关于我</button>
   <span class="hud-sep"></span>
   <button id="btn-reset" title="回到正面" aria-label="回到正面">⟳</button>
-  <a class="hud-chip hud-pdf" href="resume.pdf" target="_blank" rel="noopener" title="打开 PDF 版简历">PDF 简历</a>
+  <a class="hud-chip hud-pdf" id="btn-pdf" href="resume.pdf" target="_blank" rel="noopener" title="打开 PDF 版简历">PDF 简历</a>
 </div>
 <div id="key-hint">← → 翻面<br>Esc 关闭详情</div>
 
@@ -230,7 +241,7 @@
 
 <div id="loader">
   <div class="l-title">3D RESUME</div>
-  <div class="l-sub">刘原宁 · 2026</div>
+  <div class="l-sub" id="l-sub">刘原宁 · 2026</div>
   <div class="l-bar"><i></i></div>
 </div>
 <div id="fallback">3D 引擎加载失败，请刷新重试。<br>也可直接联系：ll3191125498@163.com</div>
@@ -249,17 +260,22 @@ function startApp(){
   };
   var SERIF = '"Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",serif';
   var SANS  = '-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif';
+  var LANG  = 'zh';   // 当前语言：zh | en
 
-  /* ==================== 简历数据（改这里即可更新内容） ==================== */
+  /* ==================== 简历数据（改这里即可更新内容，字段为 {zh,en} 双语） ==================== */
   var FACES = [
-    { id:'front', name:'基本信息', label:'RESUME · 2026',
-      type:'front',
-      title:'刘原宁', subtitle:'LIU YUAN NING',
-      role:'Agent 智能体开发工程师', meta:'24 岁 · 河北省承德市',
-      contact:[['TEL','15756494780'],['MAIL','ll3191125498@163.com']],
-      edu:'西南民族大学 · 通信工程 · 工学学士',
-      slogan:'「把 AI 变成能干活的人」',
-      detail:[
+    { id:'front', type:'front',
+      name:{zh:'基本信息', en:'Profile'},
+      label:{zh:'RESUME · 2026', en:'RESUME · 2026'},
+      title:{zh:'刘原宁', en:'LIU YUAN NING'},
+      subtitle:{zh:'LIU YUAN NING', en:'刘原宁'},
+      role:{zh:'Agent 智能体开发工程师', en:'AI Agent Development Engineer'},
+      meta:{zh:'24 岁 · 河北省承德市', en:'24 · Chengde, Hebei, China'},
+      contact:{zh:[['TEL','15756494780'],['MAIL','ll3191125498@163.com']], en:[['TEL','15756494780'],['MAIL','ll3191125498@163.com']]},
+      edu:{zh:'西南民族大学 · 通信工程 · 工学学士', en:'Southwest Minzu University · Communication Eng. · B.Eng.'},
+      slogan:{zh:'「把 AI 变成能干活的人」', en:'"Turning AI into people who get things done"'},
+      hint:{zh:'← 拖拽旋转 · 点击查看详情 →', en:'← Drag to rotate · Click for details →'},
+      detail:{zh:[
         ['h4','基本信息'],
         ['row',['求职意向','Agent 智能体开发工程师']],
         ['row',['TEL','15756494780']],
@@ -269,14 +285,26 @@ function startApp(){
         ['p','<b>西南民族大学</b> ｜ 通信工程专业 ｜ 工学学士<br><span class="d-sub">2021.09 – 2026.01</span>'],
         ['h4','一句话定位'],
         ['p','从通信工程转战 AI，专注 Agent 与大模型应用落地，能独立承担「模型接入 → 业务编排 → 工程交付」全流程工作。']
-      ]},
-    { id:'right', name:'项目一', label:'PROJECT 01 · 2025.07 – 2026.01',
-      type:'project',
-      title:'文本智能分类引擎',
-      desc:'可插拔 · 高准确率 · 低延迟，嵌入线上推荐系统，覆盖四代模型。',
-      stats:[['82.5% → 95.8%','准确率逐代提升'],['2ms','单条推理延迟']],
-      tags:['FastText','MacBERT','DeepSeek LLM','Flask','Docker Compose'],
-      detail:[
+      ],en:[
+        ['h4','Profile'],
+        ['row',['Objective','AI Agent Development Engineer']],
+        ['row',['TEL','15756494780']],
+        ['row',['MAIL','ll3191125498@163.com']],
+        ['row',['Location','Chengde, Hebei, China · 24']],
+        ['h4','Education'],
+        ['p','<b>Southwest Minzu University</b> ｜ Communication Engineering ｜ B.Eng.<br><span class="d-sub">2021.09 – 2026.01</span>'],
+        ['h4','Positioning'],
+        ['p','Moved from telecom into AI, focused on shipping Agent and LLM applications end-to-end: model integration → orchestration → delivery.']
+      ]}},
+    { id:'right', type:'project',
+      name:{zh:'项目一', en:'Project 1'},
+      label:{zh:'PROJECT 01 · 2025.07 – 2026.01', en:'PROJECT 01 · 2025.07 – 2026.01'},
+      title:{zh:'文本智能分类引擎', en:'Text Classification Engine'},
+      desc:{zh:'可插拔 · 高准确率 · 低延迟，嵌入线上推荐系统，覆盖四代模型。', en:'Pluggable · high-accuracy · low-latency, embedded in the recommendation system across four model generations.'},
+      stats:{zh:[['82.5% → 95.8%','准确率逐代提升'],['2ms','单条推理延迟']], en:[['82.5% → 95.8%','Accuracy by generation'],['2ms','Inference latency']]},
+      tags:{zh:['FastText','MacBERT','DeepSeek LLM','Flask','Docker Compose'], en:['FastText','MacBERT','DeepSeek LLM','Flask','Docker Compose']},
+      hint:{zh:'点击查看详情 →', en:'Click for details →'},
+      detail:{zh:[
         ['h4','项目描述'],
         ['p','某新闻资讯平台日均产生数万条 UGC/PGC 短内容，原有编辑人工分拣模式效率低下、分类标准不一，导致内容投递延迟严重。该项目是一套可插拔、高准确率、低延迟的文本分类引擎，直接嵌入线上推荐系统，覆盖 RF、FastText、MacBERT、DeepSeek LLM 四代模型。'],
         ['h4','技术栈'],
@@ -289,14 +317,29 @@ function startApp(){
         ]],
         ['h4','项目成果'],
         ['p','准确率逐版本递进（82.5% → 95.8%），v3 推理 2ms、v2 4.9ms，满足实时推荐场景。交付从数据预处理到 Docker 部署的全链路可运行系统，支持一键训练与一键启动。']
-      ]},
-    { id:'back', name:'项目二', label:'PROJECT 02 · 2026.01 – 2026.07',
-      type:'project',
-      title:'LangGraph 多智能体智能助教系统',
-      desc:'四大智能体 + RAG 检索 + 人工复核闭环的 AI 教学平台。',
-      stats:[['0.70 → 0.85','RAG 精排 Recall@5'],['100%','复核闭环成功率']],
-      tags:['LangGraph','Milvus','FastAPI','HitL','SSE'],
-      detail:[
+      ],en:[
+        ['h4','Description'],
+        ['p','A news platform generates tens of thousands of short UGC/PGC items daily; manual editorial triage was slow and inconsistent, hurting delivery and retention. This is a pluggable, high-accuracy, low-latency text classification engine embedded in the recommendation system, covering four generations: RF, FastText, MacBERT and DeepSeek LLM.'],
+        ['h4','Tech Stack'],
+        ['p','scikit-learn (RF+GBDT ensemble), jieba, TF-IDF, FastText, PyTorch + MacBERT (ModelScope fine-tune), DeepSeek API (OpenAI SDK), Flask + Blueprint, Streamlit, Docker Compose, pytest, Git'],
+        ['h4','Core work: four-stage approach'],
+        ['ul',[
+          '<b>v1</b> Random Forest + GBDT soft voting (jieba → TF-IDF 1-2gram); <b>v2</b> FastText (char/word dual-path + AutoTune); <b>v3</b> MacBERT (16 epochs, max_length=32); <b>v4</b> DeepSeek LLM (zero-training, lean prompt) — accuracy rose from 82.5% to 95.8%.',
+          'Flask app-factory + Blueprint architecture, four independent routes (/api/v1 ~ v4), unified JSON responses, pluggable models.',
+          'Docker Compose dual-container deployment, Streamlit frontend, full pytest + benchmark coverage.'
+        ]],
+        ['h4','Results'],
+        ['p','Accuracy improved version by version (82.5% → 95.8%); v3 inference 2ms, v2 4.9ms for real-time recommendation. Delivered a full runnable system from data prep to Docker deployment, with one-click training and startup.']
+      ]}},
+    { id:'back', type:'project',
+      name:{zh:'项目二', en:'Project 2'},
+      label:{zh:'PROJECT 02 · 2026.01 – 2026.07', en:'PROJECT 02 · 2026.01 – 2026.07'},
+      title:{zh:'LangGraph 多智能体智能助教系统', en:'LangGraph Multi-Agent AI Tutor'},
+      desc:{zh:'四大智能体 + RAG 检索 + 人工复核闭环的 AI 教学平台。', en:'AI teaching platform with four agents + RAG + human-in-the-loop.'},
+      stats:{zh:[['0.70 → 0.85','RAG 精排 Recall@5'],['100%','复核闭环成功率']], en:[['0.70 → 0.85','RAG Recall@5'],['100%','HITL loop success']]},
+      tags:{zh:['LangGraph','Milvus','FastAPI','HitL','SSE'], en:['LangGraph','Milvus','FastAPI','HitL','SSE']},
+      hint:{zh:'点击查看详情 →', en:'Click for details →'},
+      detail:{zh:[
         ['h4','项目描述'],
         ['p','某职业培训机构日均产生大量学生答疑、作业提交与模拟面试需求，原有教师人工处理模式效率低下、标准不一。该项目是一套可插拔、多智能体、带人工复核闭环的 AI 教学助教平台，覆盖智能问答、试卷批改、模拟面试、简历审查四大教学场景。'],
         ['h4','技术栈'],
@@ -311,13 +354,31 @@ function startApp(){
         ]],
         ['h4','项目成果'],
         ['p','四大智能体 + 统一入口端到端跑通，批改-复核闭环成功率 100%（示例），检索 Recall@5 由纯向量 0.70 提升至 0.85（示例），主观题评分方差由 ±8 收敛至 ±1（示例）；交付从知识库构建、智能体编排到 Docker Compose 部署的全链路可运行系统，支持私有化部署与一键启动。']
-      ]},
-    { id:'left', name:'关于我', label:'ABOUT ME',
-      type:'about',
-      title:'从通信工程到 Agent 开发',
-      lines:['完整项目经验：模型接入 → 业务编排 → 工程交付','工程化思维 · 快速学习 · 乐于把新技术落地','业余阅读写作 · 逻辑思维 · 抗压能力强'],
-      skills:[['AGENT','LangChain · LangGraph · HitL · SSE'],['RAG','Milvus · BGE-M3 · Reranker'],['模型','PyTorch · MacBERT · scikit-learn'],['后端','FastAPI · PostgreSQL · Docker']],
-      detail:[
+      ],en:[
+        ['h4','Description'],
+        ['p','A training institute handles heavy daily volumes of student Q&A, homework and mock interviews; manual processing was slow and inconsistent. This is a pluggable, multi-agent AI tutor platform with a human-in-the-loop review loop, covering Q&A, exam grading, mock interviews and resume review.'],
+        ['h4','Tech Stack'],
+        ['p','LangGraph + LangChain, FastAPI, PostgreSQL, Milvus, BGE-M3 / BGE-Reranker / MiniLM (local inference), DeepSeek API, PyMuPDF, Docker Compose, Vue3, pytest'],
+        ['h4','Core Work'],
+        ['ul',[
+          '<b>Q&A</b>: RAG pipeline (parse → chunk → BGE-M3 embed → Milvus Top30 recall → Reranker Top5), intent classification via local MiniLM, all retrieval/classification stays on-prem; no-result/low-confidence falls back to humans.',
+          '<b>Exam grading</b>: LangGraph interrupt + AsyncPostgresSaver for human-in-the-loop — AI scores by rubric → pauses for teacher review → publishes grades; state machine aligned with DB constraints, resumable across requests/processes.',
+          '<b>Mock interview</b>: five-stage state machine multi-turn dialogue with dynamic follow-ups + scoring report; <b>resume review</b>: PDF parse → structured extraction → six-dimension parallel scoring (asyncio.gather) → checklist & suggestions.',
+          '<b>Orchestrator</b>: routes four agents by intent, single entry with SSE streaming (chunk/done/error events), session_id for multi-turn context.',
+          'Local models in Docker + DeepSeek API hybrid routing for cost control; solved transformers/FlagEmbedding version and Windows event-loop compatibility.'
+        ]],
+        ['h4','Results'],
+        ['p','Four agents + unified entry run end-to-end; grading-review loop success 100% (sample), Recall@5 up from 0.70 to 0.85 (sample), subjective-score variance down from ±8 to ±1 (sample). Delivered a full runnable system from knowledge base to Docker Compose, private-deployment ready.']
+      ]}},
+    { id:'left', type:'about',
+      name:{zh:'关于我', en:'About'},
+      label:{zh:'ABOUT ME', en:'ABOUT ME'},
+      title:{zh:'从通信工程到 Agent 开发', en:'From Telecom to AI Agents'},
+      lines:{zh:['完整项目经验：模型接入 → 业务编排 → 工程交付','工程化思维 · 快速学习 · 乐于把新技术落地','业余阅读写作 · 逻辑思维 · 抗压能力强'],
+             en:['Full lifecycle: model integration → orchestration → delivery','Engineering-minded · fast learner · ships new tech','Avid reader/writer · logical · resilient']},
+      skills:{zh:[['AGENT','LangChain · LangGraph · HitL · SSE'],['RAG','Milvus · BGE-M3 · Reranker'],['模型','PyTorch · MacBERT · scikit-learn'],['后端','FastAPI · PostgreSQL · Docker']],
+              en:[['AGENT','LangChain · LangGraph · HitL · SSE'],['RAG','Milvus · BGE-M3 · Reranker'],['Models','PyTorch · MacBERT · scikit-learn'],['Backend','FastAPI · PostgreSQL · Docker']]},
+      detail:{zh:[
         ['h4','自我评价'],
         ['p','具备大模型应用与智能体（Agent）开发的完整项目经验，从 RAG 检索链路、多智能体编排到人工复核闭环均有实际落地，能独立承担「模型接入 → 业务编排 → 工程交付」全流程工作。'],
         ['p','掌握传统机器学习与深度学习基础（文本分类、模型微调、模型压缩），技术栈覆盖 LangChain / LangGraph、FastAPI、Milvus、Docker 等主流工程体系。'],
@@ -333,12 +394,54 @@ function startApp(){
           '<b>Web 后端</b>FastAPI 异步开发、RESTful API、JWT 鉴权、PostgreSQL（异步 SQLAlchemy / JSONB）',
           '<b>工具链</b>Git、Docker Compose、pytest、asyncio、jieba / TF-IDF'
         ]]
-      ]}
+      ],en:[
+        ['h4','Self-evaluation'],
+        ['p','Full project experience in LLM applications and Agent development — RAG retrieval, multi-agent orchestration, human-in-the-loop loops — able to independently own the whole "model integration → orchestration → delivery" pipeline.'],
+        ['p','Solid ML/DL fundamentals (text classification, fine-tuning, model compression); stack spans LangChain/LangGraph, FastAPI, Milvus, Docker.'],
+        ['p','Transitioned from communication engineering into AI, engineering-minded, fast learner, keeps up with Agent and RAG, enjoys turning new tech into working systems.'],
+        ['p','Avid reader/writer; logical and resilient; fits teams quickly. Aiming to go deeper in AI.'],
+        ['h4','Skills Overview'],
+        ['ul',[
+          '<b>Agent Engineering</b>LangChain / LangGraph orchestration, intent classification & multi-agent routing, HitL (interrupt pause/resume), state machine, SSE streaming',
+          '<b>RAG & Retrieval</b>Milvus vector search, BGE-M3 embeddings, BGE-Reranker, chunking, document parsing',
+          '<b>Machine Learning</b>scikit-learn, Pandas, NumPy, Random Forest, GBDT, FastText',
+          '<b>Deep Learning</b>PyTorch, BERT / MacBERT fine-tuning & deployment, quantization / distillation / pruning',
+          '<b>LLM Apps</b>DeepSeek / OpenAI API, Prompt Engineering, hybrid routing & cost control',
+          '<b>Web Backend</b>FastAPI async, RESTful API, JWT auth, PostgreSQL (async SQLAlchemy / JSONB)',
+          '<b>Tooling</b>Git, Docker Compose, pytest, asyncio, jieba / TF-IDF'
+        ]]
+      ]}}
   ];
 
   var FACE_YAW = { front:0, right:-Math.PI/2, back:Math.PI, left:Math.PI/2 };
   var ORDER    = ['front','left','back','right'];   // yaw = idx * π/2 时正对相机的面（HUD 映射用）
   var NARR     = ['front','right','back','left'];   // 阅读顺序（→ / 下一面）
+
+  /* ==================== 界面文案（中英） ==================== */
+  var UI = {
+    zh: { hud:['基本信息','项目一','项目二','关于我'], resetTitle:'回到正面',
+          pdf:'PDF 简历', pdfTitle:'打开 PDF 版简历',
+          hint:'<span class="hl">←</span> 拖拽旋转 · 滚轮缩放 · 点击查看详情 <span class="hl">→</span>',
+          tour:'RESUME TOUR · 自动导览中…',
+          keyHint:'← → 翻面<br>Esc 关闭详情', loaderSub:'刘原宁 · 2026', langBtn:'EN' },
+    en: { hud:['Profile','Project 1','Project 2','About'], resetTitle:'Reset view',
+          pdf:'PDF Resume', pdfTitle:'Open PDF resume',
+          hint:'<span class="hl">←</span> Drag to rotate · Scroll to zoom · Click for details <span class="hl">→</span>',
+          tour:'RESUME TOUR · Playing…',
+          keyHint:'← → rotate<br>Esc close', loaderSub:'LIU YUAN NING · 2026', langBtn:'中文' }
+  };
+
+  /* 取当前语言文案：字段为 {zh,en} 对象时取对应语言，否则原样返回 */
+  function T(v){ return (v && typeof v==='object' && !Array.isArray(v) && v.zh!==undefined) ? v[LANG] : v; }
+  function localizeFace(f){
+    return {
+      id:f.id, type:f.type, name:T(f.name), label:T(f.label), title:T(f.title),
+      subtitle:T(f.subtitle), role:T(f.role), meta:T(f.meta), contact:T(f.contact),
+      edu:T(f.edu), slogan:T(f.slogan), hint:T(f.hint), desc:T(f.desc),
+      stats:T(f.stats), tags:T(f.tags), lines:T(f.lines), skills:T(f.skills), detail:T(f.detail)
+    };
+  }
+
 
   /* ==================== Canvas 绘制工具 ==================== */
   function makeCanvas(){
@@ -405,7 +508,8 @@ function startApp(){
     ctx.fillStyle=C.teal; ctx.font='600 26px '+SANS; ctx.letterSpacing='8px';
     ctx.fillText(f.label,72,120);
     ctx.letterSpacing='0px';
-    ctx.fillStyle=C.ink; ctx.font='700 132px '+SERIF; ctx.letterSpacing='10px';
+    ctx.fillStyle=C.ink; ctx.letterSpacing='6px';
+    fitFont(ctx, f.title, 860, 128, 64, '700', SERIF);   // 英文名较长，自适应字号
     ctx.fillText(f.title,72,300);
     ctx.fillStyle=C.teal; ctx.font='600 30px '+SANS; ctx.letterSpacing='8px';
     ctx.fillText(f.subtitle,76,352);
@@ -470,7 +574,7 @@ function startApp(){
       tx+=w+14;
     });
     ctx.fillStyle='rgba(154,140,125,.75)'; ctx.font='400 23px '+SANS; ctx.letterSpacing='4px';
-    ctx.textAlign='center'; ctx.fillText('点击查看详情 →',512,956);
+    ctx.textAlign='center'; ctx.fillText(f.hint,512,956);
     ctx.textAlign='left'; ctx.letterSpacing='0px';
   }
   function drawAbout(ctx,f){
@@ -571,16 +675,25 @@ function startApp(){
 
   var faces={};
   FACES.forEach(function(f){
-    var ctx=makeCanvas().getContext('2d');
-    if(f.type==='front') drawFront(ctx,f);
-    else if(f.type==='project') drawProject(ctx,f);
-    else drawAbout(ctx,f);
-    var tex=makeTexture(ctx.canvas);
-    var mesh=makeFaceMesh(tex);
+    var mesh=makeFaceMesh(null);
     mesh.userData.faceId=f.id;
     faces[f.id]=mesh;
     cube.add(mesh);
   });
+  function buildFaceTextures(){
+    FACES.forEach(function(f){
+      var lf=localizeFace(f);
+      var ctx=makeCanvas().getContext('2d');
+      if(lf.type==='front') drawFront(ctx,lf);
+      else if(lf.type==='project') drawProject(ctx,lf);
+      else drawAbout(ctx,lf);
+      var mesh=faces[f.id];
+      var old=mesh.material.map;
+      mesh.material.map=makeTexture(ctx.canvas);
+      mesh.material.needsUpdate=true;
+      if(old) old.dispose();
+    });
+  }
   // 顶底装饰盖（保留引用，用于射线遮挡：点击顶底时不再穿透命中背面）
   var capTopCtx=makeCanvas().getContext('2d'); drawCap(capTopCtx,'2026','RESUME');
   var capBottomCtx=makeCanvas().getContext('2d'); drawCap(capBottomCtx,'LIU','YUAN NING');
@@ -598,6 +711,7 @@ function startApp(){
   faces.back.rotation.y=Math.PI; faces.back.position.set(0,0,-HALF);
   faces.right.rotation.y=Math.PI/2; faces.right.position.set(HALF,0,0);
   faces.left.rotation.y=-Math.PI/2; faces.left.position.set(-HALF,0,0);
+  buildFaceTextures();
 
   /* ==================== 背景粒子（鼠标可扰动） ==================== */
   var spriteTex=(function(){
@@ -695,7 +809,7 @@ function startApp(){
     updateHud(id);
     twistYawTo(FACE_YAW[id],380,function(){
       expanded=id;
-      detailEl.innerHTML=buildDetail(FACES.filter(function(f){return f.id===id;})[0]);
+      detailEl.innerHTML=buildDetail(localizeFace(FACES.filter(function(f){return f.id===id;})[0]));
       detailEl.classList.add('show');
       tweenCamZ(CAM_NEAR,560);
     });
@@ -784,11 +898,35 @@ function startApp(){
   }
 
   /* ==================== HUD / 键盘 ==================== */
-  var chips=Array.prototype.slice.call(document.querySelectorAll('.hud-chip'));
+  var chips=Array.prototype.slice.call(document.querySelectorAll('.hud-chip[data-face]'));
   function updateHud(face){
     var f=face||faceOf();
     chips.forEach(function(c){ c.classList.toggle('active',c.dataset.face===f); });
   }
+  function applyUI(){
+    var u=UI[LANG], names=['front','right','back','left'];
+    chips.forEach(function(c){
+      var idx=names.indexOf(c.dataset.face);
+      c.innerHTML='<span class="dot"></span>'+u.hud[idx];
+    });
+    document.getElementById('btn-reset').title=u.resetTitle;
+    var pdf=document.getElementById('btn-pdf');
+    pdf.textContent=u.pdf; pdf.title=u.pdfTitle;
+    document.getElementById('hint').innerHTML=u.hint;
+    document.getElementById('key-hint').innerHTML=u.keyHint;
+    document.getElementById('l-sub').textContent=u.loaderSub;
+    document.getElementById('btn-lang').textContent=u.langBtn;
+  }
+  document.getElementById('btn-lang').addEventListener('click',function(){
+    LANG=(LANG==='zh')?'en':'zh';
+    buildFaceTextures();
+    applyUI();
+    if(expanded){
+      var f=FACES.filter(function(x){return x.id===expanded;})[0];
+      detailEl.innerHTML=buildDetail(localizeFace(f));
+    }
+    updateHud();
+  });
   chips.forEach(function(c){
     c.addEventListener('click',function(){ navToFace(c.dataset.face); });
   });
@@ -811,13 +949,12 @@ function startApp(){
   /* ==================== 开场导览：一圈约 2 秒 ==================== */
   function runTour(){
     tourRunning=true;
-    document.getElementById('hint').innerHTML='RESUME TOUR · 自动导览中…';
+    document.getElementById('hint').innerHTML=UI[LANG].tour;
     var startYaw=yaw;
     animate(function(){return yaw;},function(v){ yaw=v; applyRotation(); updateHud(); },
       startYaw-2*Math.PI, 2100, easeInOutCubic, function(){
         tourRunning=false; yaw=0; applyRotation();
-        document.getElementById('hint').innerHTML=
-          '<span class="hl">←</span> 拖拽旋转 · 滚轮缩放 · 点击查看详情 <span class="hl">→</span>';
+        document.getElementById('hint').innerHTML=UI[LANG].hint;
         updateHud();
       });
     updateHud();
@@ -880,6 +1017,7 @@ function startApp(){
   }
   window.addEventListener('resize',resize);
   updateHud();
+  applyUI();
   loop();
   function whenReady(fn){ if(document.readyState==='complete') fn(); else window.addEventListener('load',fn); }
   whenReady(function(){
