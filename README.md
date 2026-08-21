@@ -1,1 +1,8 @@
-[README.md](https://github.com/user-attachments/files/31148985/README.md)
+# 刘原宁 · 3D 魔方简历
+
+一份交互式 3D 魔方简历，求职方向：Agent 智能体开发工程师。
+
+- 在线预览：https://bidengone.github.io/resume-3d/
+- 可拖拽旋转、点击查看详情，支持中英切换。
+
+> ⚠️ 本仓库包含个人真实信息（电话、邮箱、项目经历等），仅供面试沟通使用，请勿传播、转载或用于其他用途。
