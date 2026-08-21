@@ -340,39 +340,43 @@ function startApp(){
       label:{zh:'PROJECT 02 · 2026.01 – 2026.07', en:'PROJECT 02 · 2026.01 – 2026.07'},
       title:{zh:'LangGraph 多智能体智能助教系统', en:'LangGraph Multi-Agent AI Tutor'},
       desc:{zh:'四大智能体 + RAG 检索 + 人工复核闭环的 AI 教学平台。', en:'AI teaching platform with four agents + RAG + human-in-the-loop.'},
-      stats:{zh:[['0.70 → 0.85','RAG 精排 Recall@5'],['100%','复核闭环成功率']], en:[['0.70 → 0.85','RAG Recall@5'],['100%','HITL loop success']]},
+      stats:{zh:[['4 大智能体','统一入口编排'],['3 轨并行批改','人工复核闭环']], en:[['4 Agents','Unified Orchestration'],['3-Track Grading','Human-in-the-Loop']]},
       tags:{zh:['LangGraph','Milvus','FastAPI','HitL','SSE'], en:['LangGraph','Milvus','FastAPI','HitL','SSE']},
       hint:{zh:'点击查看详情 →', en:'Click for details →'},
       detail:{zh:[
         ['h4','项目描述'],
         ['p','某职业培训机构日均产生大量学生答疑、作业提交与模拟面试需求，原有教师人工处理模式效率低下、标准不一。该项目是一套可插拔、多智能体、带人工复核闭环的 AI 教学助教平台，覆盖智能问答、试卷批改、模拟面试、简历审查四大教学场景。'],
         ['h4','技术栈'],
-        ['p','LangGraph + LangChain、FastAPI、PostgreSQL、Milvus、BGE-M3 / BGE-Reranker / MiniLM（本地推理）、DeepSeek API、PyMuPDF、Docker Compose、Vue3、pytest'],
-        ['h4','核心工作'],
+        ['p','LangGraph + LangChain、FastAPI、PostgreSQL（异步 SQLAlchemy + JSONB）、Milvus、BGE-M3 / BGE-Reranker-v2-m3 / MiniLM（本地推理）、DeepSeek API、PyMuPDF、python-docx、Docker Compose、Vue3'],
+        ['h4','核心工作：参与设计并实现'],
         ['ul',[
-          '<b>智能问答</b>：RAG 链路（文档解析 → chunk 切分 → BGE-M3 向量入库 → Milvus 召回 Top30 → Reranker 精排 Top5），意图分类用 MiniLM 本地模型，检索与分类全程不出内网；无结果 / 低置信度转人工兜底。',
-          '<b>试卷批改</b>：基于 LangGraph interrupt + AsyncPostgresSaver 实现 Human-in-the-loop——AI 按评分点初评 → 汇总后暂停 → 教师复核改分 → 发布成绩，状态机与数据库约束逐字对齐，跨请求、跨进程可恢复。',
-          '<b>模拟面试</b>：五阶段状态机多轮对话，动态追问 + 评分报告；<b>简历审查</b>：PDF 解析 → 结构化提取 → 六维度并行评分（asyncio.gather）→ 问题清单与建议。',
-          '<b>编排器</b>：按意图路由四智能体，统一对话入口 SSE 流式输出（chunk/done/error 事件），session_id 支撑多轮上下文。',
-          '本地模型 Docker 部署 + DeepSeek API 混合路由控制成本；解决 transformers / FlagEmbedding 版本兼容、Windows 事件循环兼容问题。'
+          '<b>多智能体编排</b>：基于 LangGraph 构建四个 Agent（智能问答 / 试卷批改 / 简历审查 / 模拟面试），由 Orchestrator 统一调度，支持单 Agent 直达、多 Agent 串联 Pipeline（简历审查 → 模拟面试）、意图不明时澄清追问；Agent 图懒加载、统一 thread_id 会话隔离。',
+          '<b>RAG 检索链路</b>：文档解析 → 按标题/语义切块（chunk_size=512、overlap=100）→ Contextual RAG 生成定位描述 → BGE-M3 稠密(1024 维)+稀疏双向量入库 → Milvus 混合检索（WeightedRanker 0.7/0.3 + HNSW）召回 Top10 → BGE-Reranker CrossEncoder 精排 Top3；置信度低于 0.75 自动降级 Web 搜索兜底，并落入待补充知识库队列形成闭环。',
+          '<b>意图分类与路由</b>：MiniLM 本地微调二分类（general / specialized，阈值 0.85）+ 规则快判漏斗，先规则后模型省 token；跨 Agent 路由由 LLM 判断，支持问答 / 批改 / 简历 / 面试 / 多智能体 / 澄清六类。',
+          '<b>试卷批改 + 人工复核闭环</b>：三轨并行批改（规则引擎判客观题、LLM 语义评简答题、LLM 评代码题），简答题每 3 题一组限流并行；低置信度（<0.7）自动标记人工复核，基于 LangGraph interrupt + Command(resume=...) 实现 Human-in-the-loop 暂停 / 恢复，业务状态机（ai_processing → pending_review → published）与数据库约束对齐。',
+          '<b>模拟面试</b>：五阶段状态机（热身 → 技术基础 → 项目深挖 → 反问收尾 → 报告），技术原理 + 项目深挖双轨考察，回答质量四档驱动追问 / 换题，最终生成五维度雷达图报告。',
+          '<b>简历审查</b>：PyMuPDF 双栏解析 → JSON mode 结构化提取 → 六维度（项目深度 / 技术匹配 / 表达 / 结构 / 量化 / 可信度）asyncio.gather 并行评分加权。',
+          '<b>流式与后端工程</b>：SSE 流式输出（astream_events 定位节点，token / progress / meta 等事件）；本地模型进程内单例 + 启动并行预热，DeepSeek API 混合路由控成本；JWT 鉴权 + 多租户 tenant_id 隔离；解决 transformers / FlagEmbedding 版本兼容、Windows 事件循环（阻塞操作丢线程池）等兼容问题。'
         ]],
         ['h4','项目成果'],
-        ['p','四大智能体 + 统一入口端到端跑通，批改-复核闭环成功率 100%（示例），检索 Recall@5 由纯向量 0.70 提升至 0.85（示例），主观题评分方差由 ±8 收敛至 ±1（示例）；交付从知识库构建、智能体编排到 Docker Compose 部署的全链路可运行系统，支持私有化部署与一键启动。']
+        ['p','交付一套端到端可运行的多智能体教学助教平台：四大智能体 + 统一 SSE 入口跑通；试卷批改实现人工复核闭环，教师可在线复核改分并发布；RAG 采用稠密 + 稀疏混合检索与两阶段精排，无结果 / 低置信度自动兜底；配套知识库构建脚本、数据库 DDL、Milvus 索引初始化与 Docker Compose 基础设施（PostgreSQL / Milvus / MinIO / etcd），支持私有化部署。']
       ],en:[
         ['h4','Description'],
         ['p','A training institute handles heavy daily volumes of student Q&A, homework and mock interviews; manual processing was slow and inconsistent. This is a pluggable, multi-agent AI tutor platform with a human-in-the-loop review loop, covering Q&A, exam grading, mock interviews and resume review.'],
         ['h4','Tech Stack'],
-        ['p','LangGraph + LangChain, FastAPI, PostgreSQL, Milvus, BGE-M3 / BGE-Reranker / MiniLM (local inference), DeepSeek API, PyMuPDF, Docker Compose, Vue3, pytest'],
-        ['h4','Core Work'],
+        ['p','LangGraph + LangChain, FastAPI, PostgreSQL (async SQLAlchemy + JSONB), Milvus, BGE-M3 / BGE-Reranker-v2-m3 / MiniLM (local inference), DeepSeek API, PyMuPDF, python-docx, Docker Compose, Vue3'],
+        ['h4','Core Work: Design & Implementation'],
         ['ul',[
-          '<b>Q&A</b>: RAG pipeline (parse → chunk → BGE-M3 embed → Milvus Top30 recall → Reranker Top5), intent classification via local MiniLM, all retrieval/classification stays on-prem; no-result/low-confidence falls back to humans.',
-          '<b>Exam grading</b>: LangGraph interrupt + AsyncPostgresSaver for human-in-the-loop — AI scores by rubric → pauses for teacher review → publishes grades; state machine aligned with DB constraints, resumable across requests/processes.',
-          '<b>Mock interview</b>: five-stage state machine multi-turn dialogue with dynamic follow-ups + scoring report; <b>resume review</b>: PDF parse → structured extraction → six-dimension parallel scoring (asyncio.gather) → checklist & suggestions.',
-          '<b>Orchestrator</b>: routes four agents by intent, single entry with SSE streaming (chunk/done/error events), session_id for multi-turn context.',
-          'Local models in Docker + DeepSeek API hybrid routing for cost control; solved transformers/FlagEmbedding version and Windows event-loop compatibility.'
+          '<b>Multi-agent orchestration</b>: four LangGraph agents (Q&A / exam grading / resume review / mock interview) scheduled by an Orchestrator — single-agent direct, multi-agent pipeline (resume → interview), and clarification on ambiguous intent; lazy-loaded graphs with per-session thread_id isolation.',
+          '<b>RAG pipeline</b>: parse → header/semantic chunking (chunk_size=512, overlap=100) → Contextual RAG descriptions → BGE-M3 dense (1024-dim) + sparse dual vectors → Milvus hybrid search (WeightedRanker 0.7/0.3 + HNSW) Top10 recall → BGE-Reranker cross-encoder Top3 rerank; confidence below 0.75 falls back to web search and enqueues to the knowledge-base backlog.',
+          '<b>Intent classification & routing</b>: locally fine-tuned MiniLM binary classifier (general / specialized, threshold 0.85) + rule-based fast funnel; cross-agent routing by LLM across six categories (QA / exam / resume / interview / multi-agent / clarify).',
+          '<b>Exam grading + human-in-the-loop</b>: three parallel tracks (rule engine for objective questions, LLM semantic grading for short answers, LLM code review), short answers batched 3 at a time for rate limiting; low confidence (<0.7) flagged for manual review; LangGraph interrupt + Command(resume=...) implements HITL pause/resume, with the business state machine (ai_processing → pending_review → published) aligned to DB constraints.',
+          '<b>Mock interview</b>: five-stage state machine (warmup → tech basics → project deep-dive → closing → report), dual-track (theory + project) with four-tier answer quality driving follow-ups, generating a five-dimension radar report.',
+          '<b>Resume review</b>: PyMuPDF two-column parsing → JSON-mode structured extraction → six-dimension (project depth / tech match / expression / structure / quantification / credibility) asyncio.gather parallel scoring.',
+          '<b>Streaming & backend engineering</b>: SSE streaming (astream_events node location, token / progress / meta events); in-process singleton local models with parallel warm-up; DeepSeek hybrid routing for cost control; JWT auth + tenant_id multi-tenancy isolation; solved transformers/FlagEmbedding version and Windows event-loop (blocking IO offloaded to thread pool) compatibility.'
         ]],
         ['h4','Results'],
-        ['p','Four agents + unified entry run end-to-end; grading-review loop success 100% (sample), Recall@5 up from 0.70 to 0.85 (sample), subjective-score variance down from ±8 to ±1 (sample). Delivered a full runnable system from knowledge base to Docker Compose, private-deployment ready.']
+        ['p','Delivered an end-to-end runnable multi-agent tutor platform: four agents + unified SSE entry working; exam grading with a human review loop where teachers review, adjust and publish; RAG with dense+sparse hybrid retrieval and two-stage reranking, auto-fallback on no-result / low-confidence; plus knowledge-base build scripts, DB DDL, Milvus index init and Docker Compose infrastructure (PostgreSQL / Milvus / MinIO / etcd), private-deployment ready.']
       ]}},
     { id:'left', type:'about',
       name:{zh:'关于我', en:'About'},
